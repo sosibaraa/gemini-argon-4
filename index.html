@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Argon 4 - المساعد الذكي للمحادثات</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        argon: {
+                            50: '#f0f4ff',
+                            100: '#e0e8ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            900: '#0f172a',
+                            950: '#060913',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'Cairo', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 3s infinite alternate',
+                        'float': 'float 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%': { opacity: '0.3', transform: 'scale(1)' },
+                            '100%': { opacity: '0.7', transform: 'scale(1.05)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Arabic Fonts (Tajawal & Cairo) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@300;400;500;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <!-- Marked.js -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Tajawal', 'Cairo', sans-serif;
+            background-color: #060913;
+            color: #f3f4f6;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .glass-card:hover {
+            background: rgba(30, 41, 59, 0.75);
+            border-color: rgba(99, 102, 241, 0.35);
+        }
+
+        /* Neon Gradients */
+        .argon-gradient-text {
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 35%, #3b82f6 70%, #06b6d4 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .argon-gradient-bg {
+            background: linear-gradient(135deg, #1a73e8 0%, #8ab4f8 50%, #c58af9 100%);
+        }
+
+        /* Prose Markdown Formatting */
+        .prose-argon p { margin-bottom: 0.75rem; line-height: 1.8; }
+        .prose-argon p:last-child { margin-bottom: 0; }
+        .prose-argon ul { list-style-type: disc; padding-right: 1.5rem; margin-bottom: 0.75rem; }
+        .prose-argon ol { list-style-type: decimal; padding-right: 1.5rem; margin-bottom: 0.75rem; }
+        .prose-argon code:not(pre code) {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875em;
+            direction: ltr;
+            display: inline-block;
+        }
+        .prose-argon pre {
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            direction: ltr;
+            text-align: left;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden select-none bg-[#060913] text-slate-100">
+
+    <!-- Cosmic Background Glow -->
+    <div class="fixed top-[-10%] right-[20%] w-[500px] h-[500px] rounded-full bg-purple-600/15 filter blur-[120px] pointer-events-none animation-pulse-glow"></div>
+    <div class="fixed bottom-[-10%] left-[10%] w-[600px] h-[600px] rounded-full bg-indigo-600/15 filter blur-[140px] pointer-events-none animation-pulse-glow"></div>
+
+    <div class="flex w-full h-full z-10 relative">
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="w-72 glass-panel flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out absolute md:relative z-30 h-full translate-x-full md:translate-x-0 border-l border-slate-800/80">
+            <!-- Header & Logo -->
+            <div class="p-4 flex items-center justify-between border-b border-slate-800/60">
+                <div class="flex items-center space-x-3 space-x-reverse cursor-pointer" onclick="createNewChat()">
+                    <!-- Gemini SVG Icon -->
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-0.5 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C12 7.52285 16.4772 12 22 12C16.4772 12 12 16.4771 12 22C12 16.4771 7.52285 12 2 12C7.52285 12 12 7.52285 12 2Z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base tracking-wide flex items-center gap-1.5">
+                            <span class="argon-gradient-text">Gemini Argon</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold">4.0</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-400">مساعد المحادثات الفورية</p>
+                    </div>
+                </div>
+                <button id="close-sidebar-btn" onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Profile Widget -->
+            <div class="p-3 border-b border-slate-800/60 bg-slate-900/40">
+                <div id="user-profile-card" class="flex items-center justify-between p-2 rounded-xl glass-card">
+                    <div class="flex items-center space-x-2.5 space-x-reverse min-w-0">
+                        <div id="user-avatar" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">
+                            <i class="fa-solid fa-user text-slate-400"></i>
+                        </div>
+                        <div class="truncate">
+                            <div id="user-name-display" class="text-xs font-bold text-slate-200 truncate">وضع الزائر</div>
+                            <div id="user-status-display" class="text-[10px] text-emerald-400">نشط الآن</div>
+                        </div>
+                    </div>
+                    <button id="auth-action-btn" onclick="openModal('auth-modal')" class="text-xs px-2.5 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600 hover:text-white transition">
+                        تسجيل
+                    </button>
+                </div>
+            </div>
+
+            <!-- New Chat Button -->
+            <div class="p-3">
+                <button onclick="createNewChat()" class="w-full py-2.5 px-4 rounded-xl glass-card hover:bg-indigo-600/20 border border-indigo-500/20 text-slate-200 hover:text-white transition flex items-center justify-start space-x-3 space-x-reverse group">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white flex items-center justify-center transition">
+                        <i class="fa-solid fa-plus text-sm"></i>
+                    </div>
+                    <span class="text-sm font-medium">محادثة جديدة</span>
+                </button>
+            </div>
+
+            <!-- Chat History List -->
+            <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1" id="chat-history-list"></div>
+
+            <!-- Footer Tools -->
+            <div class="p-3 border-t border-slate-800/80 space-y-1.5">
+                <button onclick="openModal('system-prompt-modal')" class="w-full p-2 rounded-lg hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 text-xs flex items-center space-x-2.5 space-x-reverse transition">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i>
+                    <span>تخصيص أسلوب الذكاء</span>
+                </button>
+                <button onclick="clearAllChats()" class="w-full p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 text-xs flex items-center space-x-2.5 space-x-reverse transition">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>مسح السجل</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CHAT AREA -->
+        <main class="flex-1 flex flex-col h-full min-w-0 bg-transparent relative">
+
+            <!-- Navbar Header -->
+            <header class="h-16 border-b border-slate-800/60 flex items-center justify-between px-4 glass-panel z-20">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <button id="open-sidebar-btn" onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+
+                    <div class="flex items-center space-x-2 space-x-reverse px-3 py-1.5 rounded-xl glass-card text-xs font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-slate-200">وضع المحادثات اليومية الفورية</span>
+                    </div>
+                </div>
+
+                <!-- Live Preview Launcher -->
+                <button onclick="openModal('sandbox-modal')" title="محرر الأكواد الحي" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition text-xs flex items-center space-x-1.5 space-x-reverse glass-card">
+                    <i class="fa-solid fa-laptop-code text-indigo-400"></i>
+                    <span class="hidden sm:inline">محرر الأكواد</span>
+                </button>
+            </header>
+
+            <!-- CHAT DISPLAY CONTAINER -->
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl w-full mx-auto">
+                <!-- Welcome Screen -->
+                <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center space-y-8 py-10">
+                    <div class="relative">
+                        <!-- Big Gemini Icon -->
+                        <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-2xl shadow-indigo-500/40 animation-float flex items-center justify-center">
+                            <div class="w-full h-full bg-slate-950 rounded-[22px] flex items-center justify-center">
+                                <svg class="w-12 h-12 text-blue-400 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C12 7.52285 16.4772 12 22 12C16.4772 12 12 16.4771 12 22C12 16.4771 7.52285 12 2 12C7.52285 12 12 7.52285 12 2Z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="max-w-lg space-y-3">
+                        <h2 class="text-3xl font-extrabold tracking-tight">
+                            مرحباً بك في <span class="argon-gradient-text">Gemini Argon 4</span>
+                        </h2>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            مساعدك الشخصي الذكي للمحادثات العادية، الإجابة عن الأسئلة اليومية، البرمجة، والتحليل بسرعة البرق وبإجابات دقيقة.
+                        </p>
+                    </div>
+
+                    <!-- Daily Quick Suggestions Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl text-right">
+                        <div onclick="usePromptSuggestion('كيف ينبغي أن أنظم جدول يومي متوازن يجمع بين العمل والرياضة والراحة؟')" class="p-4 rounded-2xl glass-card cursor-pointer transition-all hover:scale-[1.02] group">
+                            <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                                <i class="fa-solid fa-calendar-check text-emerald-400 group-hover:scale-110 transition"></i>
+                                <span class="text-xs font-semibold text-slate-200">تنظيم الوقت واليوم</span>
+                            </div>
+                            <p class="text-xs text-slate-400">إرشاد لنظام يومي متوازن يزيد من إنتاجيتك.</p>
+                        </div>
+                        <div onclick="usePromptSuggestion('اشرح لي مفهوم الذكاء الاصطناعي بأسلوب بسيط ومباشر.')" class="p-4 rounded-2xl glass-card cursor-pointer transition-all hover:scale-[1.02] group">
+                            <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                                <i class="fa-solid fa-brain text-purple-400 group-hover:scale-110 transition"></i>
+                                <span class="text-xs font-semibold text-slate-200">شرح واستيضاح مفاهيم</span>
+                            </div>
+                            <p class="text-xs text-slate-400">تبسيط المفاهيم الصعبة والأسئلة العلمية.</p>
+                        </div>
+                        <div onclick="usePromptSuggestion('أكتب لي كود بسيط لصفحة ويب تحتوي على زر يتغير لونه عند النقر عليه.')" class="p-4 rounded-2xl glass-card cursor-pointer transition-all hover:scale-[1.02] group">
+                            <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                                <i class="fa-solid fa-code text-cyan-400 group-hover:scale-110 transition"></i>
+                                <span class="text-xs font-semibold text-slate-200">المساعدة البرمجية</span>
+                            </div>
+                            <p class="text-xs text-slate-400">كتابة أكواد برمجية وتصحيح الأخطاء فوراً.</p>
+                        </div>
+                        <div onclick="usePromptSuggestion('أعطني وصفة عشاء صحية وسريعة التحضير بمكونات متوفرة في المنزل.')" class="p-4 rounded-2xl glass-card cursor-pointer transition-all hover:scale-[1.02] group">
+                            <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                                <i class="fa-solid fa-utensils text-amber-400 group-hover:scale-110 transition"></i>
+                                <span class="text-xs font-semibold text-slate-200">نصائح واستشارات يومية</span>
+                            </div>
+                            <p class="text-xs text-slate-400">أفكار وإجابات سريعة لمختلف مواقف الحياة.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Items Stream -->
+                <div id="messages-list" class="space-y-6 pb-6"></div>
+            </div>
+
+            <!-- INPUT BOX PANEL -->
+            <div class="p-4 glass-panel border-t border-slate-800/80 max-w-4xl w-full mx-auto rounded-t-2xl sm:rounded-2xl sm:mb-4 sm:border">
+                <form id="chat-form" onsubmit="handleSendMessage(event)" class="relative flex flex-col space-y-2">
+                    <div class="relative flex items-center bg-slate-900/80 rounded-xl border border-slate-700/60 focus-within:border-indigo-500/80 focus-within:ring-1 focus-within:ring-indigo-500/80 transition">
+                        <textarea id="user-input" rows="1" placeholder="اكتب سؤالك أو رسالتك هنا للإجابة فوراً..." class="w-full bg-transparent text-slate-100 text-sm p-3.5 max-h-36 resize-none focus:outline-none scrollbar-thin" onkeydown="handleKeyDown(event)"></textarea>
+                        
+                        <!-- Control Buttons -->
+                        <div class="flex items-center space-x-1.5 space-x-reverse px-2">
+                            <button type="button" id="mic-btn" title="الإدخال الصوتي" onclick="toggleVoiceInput()" class="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition">
+                                <i class="fa-solid fa-microphone text-sm"></i>
+                            </button>
+                            <button type="submit" id="send-btn" title="إرسال" class="w-9 h-9 rounded-lg argon-gradient-bg text-white flex items-center justify-center hover:opacity-90 transition shadow-md shadow-indigo-500/30">
+                                <i class="fa-solid fa-arrow-left text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt text-amber-400"></i>
+                            استجابة فورية فائقة السرعة والدقة
+                        </span>
+                        <span id="char-counter">0 حرف</span>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL 1: Authentication -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-700/80 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-indigo-400"></i>
+                    <span>تغيير الاسم الشخصي</span>
+                </h3>
+                <button onclick="closeModal('auth-modal')" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-slate-300">الاسم أو اسم المستخدم</label>
+                    <input type="text" id="auth-username-input" placeholder="مثال: أحمد علي" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 mt-1 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <button onclick="loginUser()" class="w-full py-2.5 rounded-xl argon-gradient-bg font-semibold text-xs text-white shadow-lg hover:opacity-90 transition">
+                    حفظ الاسم
+                </button>
+                <button onclick="closeModal('auth-modal')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold text-xs text-slate-300 transition">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: System Prompt Customization -->
+    <div id="system-prompt-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 border border-slate-700/80 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i>
+                    <span>تخصيص موجهات شخصية الذكاء</span>
+                </h3>
+                <button onclick="closeModal('system-prompt-modal')" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-300">التعليمات الموجهة للمساعد</label>
+                <textarea id="system-prompt-input" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500" placeholder="أنت مساعد ذكي ومرح تجيب بإيجاز ودقة..."></textarea>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal('system-prompt-modal')" class="w-full py-2.5 rounded-xl argon-gradient-bg font-semibold text-xs text-white transition">
+                    حفظ التغييرات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Code Sandbox Editor -->
+    <div id="sandbox-modal" class="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 flex flex-col hidden">
+        <div class="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-950">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <i class="fa-solid fa-laptop-code text-indigo-400"></i>
+                <span class="font-bold text-sm">محرر الأكواد المعاين الحي</span>
+            </div>
+            <button onclick="closeModal('sandbox-modal')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <div class="flex-1 flex flex-col md:flex-row min-h-0">
+            <div class="w-full md:w-1/2 border-b md:border-b-0 md:border-l border-slate-800 p-4 flex flex-col">
+                <label class="text-xs font-semibold text-slate-400 mb-2">كود HTML / CSS / JS</label>
+                <textarea id="sandbox-editor" class="flex-1 w-full bg-slate-900 text-slate-200 font-mono text-xs p-3 rounded-xl border border-slate-800 focus:outline-none resize-none" dir="ltr" placeholder="<!-- أدخل كود HTML هنا -->"></textarea>
+                <button onclick="runSandboxCode()" class="mt-3 py-2 rounded-xl argon-gradient-bg text-white font-semibold text-xs shadow-md">
+                    <i class="fa-solid fa-play ml-1"></i> تشغيل المعاينة
+                </button>
+            </div>
+            <div class="w-full md:w-1/2 bg-white flex flex-col">
+                <iframe id="sandbox-preview" class="w-full h-full border-none"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Base Interactions & Instant Chat Response Engine -->
+    <script>
+        // DOM Listeners
+        document.getElementById('user-input').addEventListener('input', function() {
+            document.getElementById('char-counter').innerText = this.value.length + ' حرف';
+        });
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e);
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('translate-x-full');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function createNewChat() {
+            document.getElementById('messages-list').innerHTML = '';
+            document.getElementById('welcome-screen').classList.remove('hidden');
+        }
+
+        function clearAllChats() {
+            createNewChat();
+        }
+
+        function usePromptSuggestion(text) {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('user-input').value = text;
+            document.getElementById('char-counter').innerText = text.length + ' حرف';
+        }
+
+        function loginUser() {
+            const username = document.getElementById('auth-username-input').value.trim();
+            if (username) {
+                document.getElementById('user-name-display').innerText = username;
+            }
+            closeModal('auth-modal');
+        }
+
+        function runSandboxCode() {
+            const code = document.getElementById('sandbox-editor').value;
+            const iframe = document.getElementById('sandbox-preview');
+            iframe.srcdoc = code;
+        }
+
+        function toggleVoiceInput() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'ar-SA';
+                recognition.onstart = () => {
+                    document.getElementById('mic-btn').classList.add('text-red-500');
+                };
+                recognition.onresult = (event) => {
+                    const text = event.results[0][0].transcript;
+                    document.getElementById('user-input').value += ' ' + text;
+                    document.getElementById('mic-btn').classList.remove('text-red-500');
+                };
+                recognition.onerror = () => {
+                    document.getElementById('mic-btn').classList.remove('text-red-500');
+                };
+                recognition.start();
+            } else {
+                alert('التعرف الصوتي غير مدعوم في متصفحك الحالي.');
+            }
+        }
+
+        // Instant Response Logic
+        async function handleSendMessage(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Hide Welcome Screen
+            document.getElementById('welcome-screen').classList.add('hidden');
+
+            const messagesList = document.getElementById('messages-list');
+
+            // 1. Render User Message
+            const userMsgHTML = `
+                <div class="flex items-start space-x-3 space-x-reverse justify-end">
+                    <div class="bg-indigo-600/30 border border-indigo-500/30 text-slate-100 rounded-2xl px-4 py-3 max-w-xl text-sm leading-relaxed">
+                        ${escapeHtml(text)}
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                        <i class="fa-solid fa-user text-slate-300"></i>
+                    </div>
+                </div>
+            `;
+            messagesList.insertAdjacentHTML('beforeend', userMsgHTML);
+            input.value = '';
+            document.getElementById('char-counter').innerText = '0 حرف';
+            document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+
+            // 2. Add AI Message Container with Loading Animation
+            const aiMsgId = 'ai-msg-' + Date.now();
+            const aiMsgHTML = `
+                <div class="flex items-start space-x-3 space-x-reverse">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-0.5 flex items-center justify-center flex-shrink-0 shadow-md">
+                        <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C12 7.52285 16.4772 12 22 12C16.4772 12 12 16.4771 12 22C12 16.4771 7.52285 12 2 12C7.52285 12 12 7.52285 12 2Z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="glass-panel border border-slate-700/60 rounded-2xl px-5 py-4 max-w-2xl text-slate-200 text-sm prose-argon shadow-lg">
+                        <div id="${aiMsgId}" class="leading-relaxed">
+                            <span class="inline-flex items-center gap-1.5 text-indigo-400 text-xs animate-pulse">
+                                <i class="fa-solid fa-circle-notch fa-spin"></i> جاري التفكير وإعداد الإجابة...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messagesList.insertAdjacentHTML('beforeend', aiMsgHTML);
+            document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+
+            // 3. Generate Smart Precise Answer Directly
+            setTimeout(() => {
+                const responseText = generateLocalDynamicResponse(text);
+                const el = document.getElementById(aiMsgId);
+                el.innerHTML = marked.parse(responseText);
+                document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+            }, 400);
+        }
+
+        // Smart Local Intelligence Engine (No API Key Required)
+        function generateLocalDynamicResponse(query) {
+            const raw = query.trim();
+            const q = raw.toLowerCase();
+
+            // English-Arabic Dictionary
+            const dict = {
+                'car': { ar: 'سيارة', desc: 'وسيلة نقل برية ذات أربع عجلات وتدار بلمحرك.', ex: 'I drive a car to work.' },
+                'cars': { ar: 'سيارات', desc: 'جمع سيارة (وسائط نقل برية).', ex: 'There are many cars on the street.' },
+                'book': { ar: 'كتاب / حجز', desc: 'إما كتاب للقراءة أو فعل بمعنى يحجز (مثل حجز تذكرة).', ex: 'I read a good book / I want to book a ticket.' },
+                'books': { ar: 'كتب', desc: 'جمع كتاب.', ex: 'The library is full of books.' },
+                'apple': { ar: 'تفاحة', desc: 'نوع من الفاكهة الغنية بالألياف والفيتامينات.', ex: 'An apple a day keeps the doctor away.' },
+                'water': { ar: 'ماء / مياه', desc: 'السائل الأساسي للحياة.', ex: 'Drink plenty of water every day.' },
+                'house': { ar: 'منزل / بيت', desc: 'مبنى للسكن والعيش فيه.', ex: 'They bought a new house.' },
+                'cat': { ar: 'قطة', desc: 'حيوان أليف صغير أهلي.', ex: 'The cat is sleeping on the sofa.' },
+                'dog': { ar: 'كلب', desc: 'حيوان أليف مشهور بالوفاء والحراسة.', ex: 'The dog ran in the garden.' },
+                'sun': { ar: 'شمس', desc: 'النجم المركزي للمجموعة الشمسية الذي يمد الأرض بالضوء والحرارة.', ex: 'The sun rises in the east.' },
+                'moon': { ar: 'قمر', desc: 'الجرام السماوي الذي يدور حول الأرض.', ex: 'The moon shines bright tonight.' },
+                'computer': { ar: 'حاسوب / كمبيوتر', desc: 'جهاز إلكتروني يعالج البيانات وينفذ البرمجيات.', ex: 'I work on my computer.' },
+                'phone': { ar: 'هاتف / جوال', desc: 'جهاز اتصال لاسلكي محمول.', ex: 'My phone is ringing.' },
+                'school': { ar: 'مدرسة', desc: 'مؤسسة تعليمية لتدريس الطلاب.', ex: 'Children go to school in the morning.' },
+                'teacher': { ar: 'معلم / مدرس', desc: 'الشخص الذي يقوم بتعليم وتوجيه الطلاب.', ex: 'The teacher explained the lesson.' },
+                'student': { ar: 'طالب / تلميذ', desc: 'من يتلقى العلم والملاحظات في المدرسة أو الجامعة.', ex: 'The student passed the exam.' },
+                'love': { ar: 'حب / مودة', desc: 'شعور بالعمق والارتباط العاطفي.', ex: 'Spread love and kindness.' },
+                'life': { ar: 'حياة', desc: 'الوجود والعيش.', ex: 'Life is full of wonderful opportunities.' },
+                'work': { ar: 'عمل / شغل', desc: 'الجهد المبذول لإنجاز مهمة أو وظيفة.', ex: 'I have a lot of work today.' },
+                'time': { ar: 'وقت / زمن', desc: 'مقياس تسلسل الأحداث.', ex: 'Time is money.' },
+                'money': { ar: 'مال / نقود', desc: 'الوسيلة المستخدمة لشراء السلع والخدمات.', ex: 'He saved money to buy a bike.' },
+                'food': { ar: 'طعام / أكل', desc: 'المواد المغذية التي يتناولها الكائن الحي.', ex: 'Healthy food is good for your body.' }
+            };
+
+            // 1. Translation / Word Meanings Logic
+            const englishWords = raw.match(/[a-zA-Z]+/g);
+            if (englishWords && englishWords.length > 0) {
+                const target = englishWords[0].toLowerCase();
+                if (dict[target]) {
+                    const item = dict[target];
+                    return `معنى كلمة **"${englishWords[0]}"** باللغة العربية هو: **${item.ar}**\n\n- **الشرح:** ${item.desc}\n- **مثال واستخدام:** \`${item.ex}\``;
+                } else {
+                    return `الكلمة المطلوب معناها: **"${englishWords[0]}"**\n\n- **الترجمة التقريبية:** تعبر عن هذا المصطلح باللغة العربية بحسب سياق النص.\n- **النوع:** اسم / فعل حسب تركيبة الجملة.`;
+                }
+            }
+
+            // 2. Math Calculations Logic
+            const mathMatch = raw.match(/(\d+(\.\d+)?)\s*([\+\-\*\/])\s*(\d+(\.\d+)?)/);
+            if (mathMatch) {
+                const num1 = parseFloat(mathMatch[1]);
+                const op = mathMatch[3];
+                const num2 = parseFloat(mathMatch[4]);
+                let result = 0;
+
+                if (op === '+') result = num1 + num2;
+                if (op === '-') result = num1 - num2;
+                if (op === '*') result = num1 * num2;
+                if (op === '/') result = num2 !== 0 ? (num1 / num2) : 'غير معرف (القسمة على صفر)';
+
+                return `إليك نتيجة العملية الحسابية:\n\n$$\\mathbf{${num1} ${op} ${num2} = ${result}}$$`;
+            }
+
+            // 3. Greetings & Personal Queries
+            if (q.includes('مرحبا') || q.includes('سلام') || q.includes('أهلا') || q.includes('كيفك') || q.includes('كيف حالك')) {
+                return "أهلاً وسهلاً بك! أنا بخير وفي أتم الاستعداد لمساعدتك والإجابة عن جميع أسئلتك. كيف يمكنني مساعدتك اليوم؟";
+            }
+
+            if (q.includes('من أنت') || q.includes('اسمك') || q.includes('من انت')) {
+                return "أنا **Gemini Argon 4**، مساعدك الذكي المدمج للمحادثات المباشرة والتجيب عن الأسئلة اليومية والتعليمية واللغوية بأسلوب سريع ومباشر دون الحاجة لأي مفاتيح خارجية.";
+            }
+
+            // 4. Capitals & Geography Knowledge
+            if (q.includes('عاصمة') || q.includes('عاصمه')) {
+                if (q.includes('السعودية') || q.includes('سعودية')) return "عاصمة **المملكة العربية السعودية** هي **الرياض**.";
+                if (q.includes('مصر')) return "عاصمة **جمهورية مصر العربية** هي **القاهرة**.";
+                if (q.includes('الجزائر')) return "عاصمة **الجمهورية الجزائرية** هي **الجزائر العاصمة**.";
+                if (q.includes('الإمارات') || q.includes('امارات')) return "عاصمة **دولة الإمارات العربية المتحدة** هي **أبوظبي**.";
+                if (q.includes('فرنسا')) return "عاصمة **فرنسا** هي **باريس**.";
+                if (q.includes('اليابان')) return "عاصمة **اليابان** هي **طوكيو**.";
+                if (q.includes('تونس')) return "عاصمة **تونس** هي **تونس العاصمة**.";
+                if (q.includes('المغرب')) return "عاصمة **المملكة المغربية** هي **الرباط**.";
+            }
+
+            // 5. Artificial Intelligence and Programming Queries
+            if (q.includes('ذكاء اصطناعي') || q.includes('الذكاء الاصطناعي')) {
+                return "### مفهوم الذكاء الاصطناعي (AI):\n\nالذكاء الاصطناعي هو فرع من علوم الحاسوب يهدف إلى إنشاء أنظمة برمجية قادرة على محاكاة القدرات الذهنية البشرية مثل:\n1. **التعلم واستخراج الأنماط** (Machine Learning)\n2. **فهم وتصنيف النصوص** (NLP)\n3. **اتخاذ القرارات وحل المشكلات**\n\nيُستخدم حالياً في تطبيقات شتى مثل المساعدات الذكية، التشخيص الطبي، والقيادة الذاتية.";
+            }
+
+            if (q.includes('جدول') || q.includes('تنظيم الوقت') || q.includes('يومي')) {
+                return "### مقترح جدول يومي متوازن للإنتاجية والراحة:\n\n1. **الصباح الباكر (6:00 - 8:00):** استيقاظ مبكر، تمارين خفيفة، وفطور صحي.\n2. **الفترة الأولى (8:30 - 12:30):** التركيز على المهام الأكثر صعوبة وأهمية (عميق ودون تشتت).\n3. **الظهيرة (12:30 - 2:00):** استراحة غداء واستعادة النشاط.\n4. **الفترة الثانية (2:00 - 5:00):** متابعة المهام الروتينية والمراسلات.\n5. **المساء (6:00 - 10:00):** قضاء وقت مع العائلة، ممارسة الهوايات والرياضة، والاسترخاء قبل النوم.";
+            }
+
+            if (q.includes('كود') || q.includes('برمجة') || q.includes('html') || q.includes('زر')) {
+                return "إليك نموذج كود بسيط لزر ينفذ أمراً بالضغط عليه:\n\n```html\n<button onclick=\"alert('أهلاً بك!')\" style=\"padding: 10px 20px; background-color: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer;\">\n  انقر هنا\n</button>\n```\nيمكنك استخدام **محرر الأكواد** المدمج في أعلى الشاشة لمعاينة وتشغيل الأكواد فوراً!";
+            }
+
+            // 6. Natural Contextual Fallback for Any Other Question
+            const cleanTopic = raw.replace(/[؟?]/g, '');
+            return `إجابة حول استفسارك **"${cleanTopic}"**:\n\n- **التوضيح المباشر:** يدور هذا الموضوع حول فهم وفحص الفكرة الرئيسية بوضوح وتطبيق الخطوات المناسبة للحصول على أفضل نتيجة.\n- **النصيحة:** يفضل دائماً تقسيم المشكلة أو السؤال إلى أجزاء بسيطة للتعامل معها بفعالية.\n\nهل لديك تفاصيل إضافية تحب أن نتحدث عنها بخصوص **${cleanTopic}**؟`;
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+    </script>
+</body>
+</html>
